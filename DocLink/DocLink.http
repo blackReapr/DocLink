@@ -1,0 +1,6 @@
+@DocLink_HostAddress = http://localhost:5274
+
+GET {{DocLink_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
