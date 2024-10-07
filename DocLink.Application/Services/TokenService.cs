@@ -1,5 +1,6 @@
 ﻿using DocLink.Application.Interfaces;
 using DocLink.Core.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,18 +12,24 @@ namespace DocLink.Application.Services;
 public class TokenService : ITokenService
 {
     private readonly IConfiguration _configuration;
+    private readonly UserManager<AppUser> _userManager;
 
-    public TokenService(IConfiguration configuration)
+    public TokenService(IConfiguration configuration, UserManager<AppUser> userManager)
     {
         _configuration = configuration;
+        _userManager = userManager;
     }
 
     public string GenerateJWTToken(AppUser user)
     {
         var claims = new List<Claim> {
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new Claim(ClaimTypes.Name, user.UserName),
-    };
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new (ClaimTypes.Name, user.UserName)
+        };
+
+        IEnumerable<string> roles = _userManager.GetRolesAsync(user).Result;
+        foreach (var role in roles) { claims.Add(new(ClaimTypes.Role, role)); }
+
         var jwtToken = new JwtSecurityToken(
             claims: claims,
             notBefore: DateTime.UtcNow,

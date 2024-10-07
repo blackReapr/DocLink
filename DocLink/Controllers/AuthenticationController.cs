@@ -16,7 +16,7 @@ namespace DocLink.Presentation.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(SignUpDto signUpDto)
+        public async Task<IActionResult> Register([FromForm] SignUpDto signUpDto)
         {
             string emailVerificationToken = await _authenticationService.RegisterAsync(signUpDto);
             return Ok(new { emailVerificationToken });
@@ -41,13 +41,6 @@ namespace DocLink.Presentation.Controllers
         {
             await _authenticationService.ResetPasswordAsync(resetPasswordDto);
             return Ok();
-        }
-
-        [HttpGet("email-verification-token")]
-        public async Task<IActionResult> GenerateEmailVerficationToken(string email)
-        {
-            string token = await _authenticationService.GetEmailVerificationTokenAsync(email);
-            return Ok(token);
         }
 
         [HttpPost("forgot-password")]

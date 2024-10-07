@@ -3,6 +3,7 @@ using DocLink.Application.Dtos.AppointmentDtos;
 using DocLink.Application.Interfaces;
 using DocLink.Core.Entities;
 using DocLink.Data.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace DocLink.Application.Implementations;
@@ -11,19 +12,49 @@ public class AppointmentService : IAppointmentService
 {
     private readonly IMapper _mapper;
     private readonly DataContext _context;
+    private readonly UserManager<AppUser> _userManager;
 
-    public AppointmentService(IMapper mapper, DataContext context)
+    public AppointmentService(IMapper mapper, DataContext context, UserManager<AppUser> userManager)
     {
         _mapper = mapper;
         _context = context;
+        _userManager = userManager;
     }
 
-    public async Task CreateAsync(CreateAppointmentDto createAppointmentDto)
+    public async Task AcceptAsync(string appointmentId)
     {
-        if (!await _context.Users.AnyAsync(u => u.Id == createAppointmentDto.DoctorId)) throw new Exception("Invalid doctor id");
-        if (!await _context.Users.AnyAsync(u => u.Id == createAppointmentDto.PatientId)) throw new Exception("Invalid patientid");
+        Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
+        if (appointment == null) throw new Exception("Appointment does not exist");
+        appointment.Status = Status.ACCEPTED;
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RejectAsync(string appointmentId)
+    {
+        Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
+        if (appointment == null) throw new Exception("Appointment does not exist");
+        appointment.Status = Status.REJECTED;
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task CreateAsync(AppointmentCreateDto createAppointmentDto, string patientId)
+    {
+        AppUser? patient = await _context.Users.SingleOrDefaultAsync(u => u.Id == patientId);
+        if (patient is null || !await _userManager.IsInRoleAsync(patient, "member")) throw new Exception("Invalid patient Id");
+
+        AppUser? doctor = await _context.Users.SingleOrDefaultAsync(u => u.Id == createAppointmentDto.DoctorId);
+        if (doctor is null || !await _userManager.IsInRoleAsync(doctor, "doctor")) throw new Exception("Invalid doctor Id");
+
+        if (createAppointmentDto.StartTime < DateTime.UtcNow || createAppointmentDto.EndTime <= DateTime.UtcNow) throw new Exception("Invalid date");
+
+        if (createAppointmentDto.EndTime - createAppointmentDto.StartTime != TimeSpan.FromMinutes(30)) throw new Exception("Invalid interval");
+
         if (await _context.Appointments.AnyAsync(a => a.StartTime < createAppointmentDto.EndTime && a.EndTime > createAppointmentDto.StartTime)) throw new Exception("Busy schedule");
+
         Appointment appointment = _mapper.Map<Appointment>(createAppointmentDto);
+        appointment.Status = Status.PENDING;
+        appointment.Price = doctor.Price;
+
         await _context.SaveChangesAsync();
     }
 
@@ -34,4 +65,20 @@ public class AppointmentService : IAppointmentService
         _context.Appointments.Remove(appointment);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<AppointmentReturnDto> DetailsAsync(string appointmentId)
+    {
+        Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
+        if (appointment == null) throw new Exception("Appointment does not exist");
+        AppointmentReturnDto returnDto = _mapper.Map<AppointmentReturnDto>(appointment);
+        return returnDto;
+    }
+
+    //public async Task<AppointmentReturnDto> DetailsAsync(string appointmentId)
+    //{
+    //    Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
+    //    if (appointment == null) throw new Exception("Appointment does not exist");
+    //    AppointmentReturnDto returnDto = _mapper.Map<AppointmentReturnDto>(appointment);
+    //    return returnDto;
+    //}
 }

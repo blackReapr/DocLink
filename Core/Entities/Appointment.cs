@@ -9,12 +9,13 @@ public class Appointment : BaseEntity
     public Status Status { get; set; }
     public AppUser Doctor { get; set; }
     public AppUser Patient { get; set; }
+    public decimal Price { get; set; }
 }
 
 
 public enum Status
 {
     REJECTED,
-    WAITING,
+    PENDING,
     ACCEPTED
 }

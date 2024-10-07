@@ -1,4 +1,5 @@
 ﻿using DocLink.Application.Dtos.AuthenticationDtos;
+using DocLink.Application.Extensions;
 using DocLink.Application.Interfaces;
 using DocLink.Core.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -24,8 +25,15 @@ public class AuthenticationService : IAuthenticationService
         if (signUpDto.Password != signUpDto.PasswordConfirm) throw new Exception("Passwords do not match");
         AppUser user = new() { Name = signUpDto.Name, Email = signUpDto.Email, Surname = signUpDto.Surname, UserName = signUpDto.Email };
         IdentityResult result = await _userManager.CreateAsync(user, signUpDto.Password);
-        if (!result.Succeeded) throw new Exception(result.Errors.First().ToString());
+        if (!result.Succeeded) throw new Exception(result.Errors.First().Code.ToString());
         if (!await _roleManager.RoleExistsAsync(signUpDto.Role)) throw new Exception("Invalid role");
+        if (signUpDto.Profile != null)
+        {
+            if (!signUpDto.Profile.IsImage()) throw new Exception("Invalid file format");
+            if (signUpDto.Profile.DoesSizeExceed(100)) throw new Exception("File size exceeds the limit");
+            string filename = await signUpDto.Profile.SaveFileAsync();
+            user.Profile = filename;
+        }
         await _userManager.AddToRoleAsync(user, signUpDto.Role);
         string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         return token;
@@ -68,13 +76,5 @@ public class AuthenticationService : IAuthenticationService
         var result = await _userManager.ResetPasswordAsync(appUser, resetPasswordDto.Token, resetPasswordDto.Password);
         if (!result.Succeeded) throw new Exception();
         await _userManager.UpdateSecurityStampAsync(appUser);
-    }
-
-    public async Task<string> GetEmailVerificationTokenAsync(string email)
-    {
-        AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (appUser == null) throw new Exception("User not found");
-        string token = await _userManager.GenerateEmailConfirmationTokenAsync(appUser);
-        return token;
     }
 }

@@ -9,6 +9,5 @@ namespace DocLink.Application.Interfaces
         Task<string> LoginAsync(LoginDto loginDto);
         Task<string> RegisterAsync(SignUpDto signUpDto);
         Task ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
-        Task<string> GetEmailVerificationTokenAsync(string token);
     }
 }
