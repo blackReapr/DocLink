@@ -13,7 +13,6 @@ public class SignUpDto
     public string? Description { get; set; }
     public IFormFile? Profile { get; set; }
     public decimal? Price { get; set; }
-    public string Role { get; set; }
 }
 
 public class SignUpDtoValidator : AbstractValidator<SignUpDto>
@@ -26,14 +25,5 @@ public class SignUpDtoValidator : AbstractValidator<SignUpDto>
         RuleFor(s => s.Password).MinimumLength(6).MaximumLength(25);
         RuleFor(s => s.PasswordConfirm).Equal(s => s.Password);
         RuleFor(s => s.Description).MaximumLength(200);
-        RuleFor(s => s).Custom((s, context) =>
-        {
-            if (s.Role == "doctor" && s.Price > 100 && s.Price < 25) context.AddFailure("Price must be in the range: 25-100");
-            else
-            {
-                if (s.Price != 0) context.AddFailure("Invalid field: Price");
-            }
-
-        });
     }
 }

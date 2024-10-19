@@ -26,7 +26,6 @@ public class AuthenticationService : IAuthenticationService
         AppUser user = new() { Name = signUpDto.Name, Email = signUpDto.Email, Surname = signUpDto.Surname, UserName = signUpDto.Email };
         IdentityResult result = await _userManager.CreateAsync(user, signUpDto.Password);
         if (!result.Succeeded) throw new Exception(result.Errors.First().Code.ToString());
-        if (!await _roleManager.RoleExistsAsync(signUpDto.Role)) throw new Exception("Invalid role");
         if (signUpDto.Profile != null)
         {
             if (!signUpDto.Profile.IsImage()) throw new Exception("Invalid file format");
@@ -34,7 +33,7 @@ public class AuthenticationService : IAuthenticationService
             string filename = await signUpDto.Profile.SaveFileAsync();
             user.Profile = filename;
         }
-        await _userManager.AddToRoleAsync(user, signUpDto.Role);
+        await _userManager.AddToRoleAsync(user, "member");
         string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         return token;
     }

@@ -1,4 +1,4 @@
-    using DocLink.Application.Implementations;
+using DocLink.Application.Implementations;
 using DocLink.Application.Interfaces;
 using DocLink.Application.Services;
 using DocLink.Core.Entities;
@@ -7,14 +7,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Reflection;
 using System.Text;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using DocLink.Application.Profiles;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.Swagger;
+using DocLink.Application.Dtos.AuthenticationDtos;
+using DocLink.Presentation.Converters;
+using Microsoft.OpenApi.Any;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,11 +24,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new DateTimeConverterUsingDateTimeParse()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    // Customize DateTime formats for Swagger UI
+    c.MapType<DateTime>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "date-time", // Matches the updated format dd-MM-yyyy HH:mm
+        Example = new OpenApiString("21-10-2024 14:30")
+    });
+});
 //builder.Services.AddDistributedMemoryCache();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidator>();
 builder.Services.AddFluentValidationRulesToSwagger();
 builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
