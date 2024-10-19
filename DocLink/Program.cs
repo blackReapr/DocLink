@@ -1,4 +1,4 @@
-using DocLink.Application.Implementations;
+    using DocLink.Application.Implementations;
 using DocLink.Application.Interfaces;
 using DocLink.Application.Services;
 using DocLink.Core.Entities;
@@ -20,7 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new DateTimeConverterUsingDateTimeParse()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

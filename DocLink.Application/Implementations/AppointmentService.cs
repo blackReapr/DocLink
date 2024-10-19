@@ -21,19 +21,11 @@ public class AppointmentService : IAppointmentService
         _userManager = userManager;
     }
 
-    public async Task AcceptAsync(string appointmentId)
+    public async Task ChangeStatusAsync(string appointmentId, Status status)
     {
         Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
         if (appointment == null) throw new Exception("Appointment does not exist");
-        appointment.Status = Status.ACCEPTED;
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task RejectAsync(string appointmentId)
-    {
-        Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
-        if (appointment == null) throw new Exception("Appointment does not exist");
-        appointment.Status = Status.REJECTED;
+        appointment.Status = status;
         await _context.SaveChangesAsync();
     }
 

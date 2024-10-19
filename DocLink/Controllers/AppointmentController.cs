@@ -31,23 +31,13 @@ namespace DocLink.Presentation.Controllers
             return Ok();
         }
 
-        [HttpPut("accept")]
+        [HttpPut("status/{appointmentId}")]
         [Authorize(Roles = "doctor")]
         public async Task<IActionResult> Accept(string appointmentId)
         {
             AppUser? appUser = await _userManager.Users.SingleOrDefaultAsync(u => u.Name == User.Identity.Name);
             if (appUser == null || !await _userManager.IsInRoleAsync(appUser, "doctor")) return Unauthorized();
-            await _appointmentService.AcceptAsync(appointmentId);
-            return Ok();
-        }
-
-        [HttpPut("reject")]
-        [Authorize(Roles = "doctor")]
-        public async Task<IActionResult> Reject(string appointmentId)
-        {
-            AppUser? appUser = await _userManager.Users.SingleOrDefaultAsync(u => u.Name == User.Identity.Name);
-            if (appUser == null || !await _userManager.IsInRoleAsync(appUser, "doctor")) return Unauthorized();
-            await _appointmentService.RejectAsync(appointmentId);
+            await _appointmentService.ChangeStatusAsync(appointmentId, Status.ACCEPTED);
             return Ok();
         }
 

@@ -10,6 +10,7 @@ public class Appointment : BaseEntity
     public AppUser Doctor { get; set; }
     public AppUser Patient { get; set; }
     public decimal Price { get; set; }
+    public string Note { get; set; }
 }
 
 
