@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using DocLink.Application.Dtos.AuthenticationDtos;
 using DocLink.Application.Dtos.UserDtos;
+using DocLink.Application.Extensions;
 using DocLink.Application.Interfaces;
 using DocLink.Core.Entities;
 using DocLink.Data.Data;
@@ -39,5 +41,33 @@ public class UserService : IUserService
         IEnumerable<AppUser> appUsers = await _userManager.Users.AsNoTracking().ToListAsync();
         appUsers = appUsers.Where(u => _userManager.IsInRoleAsync(u, "member").Result);
         return _mapper.Map<List<UserReturnDto>>(appUsers);
+    }
+
+    public async Task<DoctorReturnDto> GetDoctorAsync(string id)
+    {
+        AppUser? appUser = await _userManager.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id && _userManager.IsInRoleAsync(u, "doctor").Result);
+        if (appUser == null) throw new Exception("Doctor does not exist");
+        IEnumerable<DateTime> appointments = await _context.Appointments.AsNoTracking().Where(a => a.DoctorId == id).Select(a => a.StartTime).ToListAsync();
+        DoctorReturnDto dto = _mapper.Map<DoctorReturnDto>(appUser);
+        dto.Appointments = appointments;
+        return dto;
+    }
+
+    public async Task<string> CreateDoctorAsync(DoctorCreateDto dto)
+    {
+        if (dto.Password != dto.PasswordConfirm) throw new Exception("Passwords do not match");
+        AppUser user = new() { Name = dto.Name, Email = dto.Email, Surname = dto.Surname, UserName = dto.Email };
+        IdentityResult result = await _userManager.CreateAsync(user, dto.Password);
+        if (!result.Succeeded) throw new Exception(result.Errors.First().Code.ToString());
+        if (dto.Profile != null)
+        {
+            if (!dto.Profile.IsImage()) throw new Exception("Invalid file format");
+            if (dto.Profile.DoesSizeExceed(100)) throw new Exception("File size exceeds the limit");
+            string filename = await dto.Profile.SaveFileAsync();
+            user.Profile = filename;
+        }
+        await _userManager.AddToRoleAsync(user, "doctor");
+        string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        return token;
     }
 }

@@ -7,7 +7,7 @@ namespace DocLink.Application.Interfaces
         Task ConfirmEmailAsync(ConfirmEmailDto confirmEmailDto);
         Task<string> ForgotPasswordAsync(string email);
         Task<string> LoginAsync(LoginDto loginDto);
-        Task<string> RegisterAsync(SignUpDto signUpDto);
+        Task RegisterAsync(SignUpDto signUpDto);
         Task ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
     }
 }

@@ -12,5 +12,6 @@ public class MapProfile : Profile
         CreateMap<AppointmentCreateDto, Appointment>();
         CreateMap<AppUser, UserReturnDto>();
         CreateMap<Appointment, AppointmentReturnDto>();
+        CreateMap<AppUser, DoctorReturnDto>();
     }
 }

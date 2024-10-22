@@ -8,5 +8,7 @@ namespace DocLink.Application.Interfaces
         Task<IEnumerable<UserReturnDto>> GetAllDoctorsAsync();
         Task<IEnumerable<UserReturnDto>> GetAllPatientAsync();
         Task<IEnumerable<UserReturnDto>> GetAllUsersAsync();
+        Task<DoctorReturnDto> GetDoctorAsync(string id);
+        Task<string> CreateDoctorAsync(DoctorCreateDto dto);
     }
 }

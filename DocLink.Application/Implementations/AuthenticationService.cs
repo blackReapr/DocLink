@@ -11,16 +11,16 @@ public class AuthenticationService : IAuthenticationService
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly ITokenService _tokenService;
-    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IEmailService _emailService;
 
-    public AuthenticationService(UserManager<AppUser> userManager, ITokenService tokenService, RoleManager<IdentityRole> roleManager)
+    public AuthenticationService(UserManager<AppUser> userManager, ITokenService tokenService, IEmailService emailService)
     {
         _userManager = userManager;
         _tokenService = tokenService;
-        _roleManager = roleManager;
+        _emailService = emailService;
     }
 
-    public async Task<string> RegisterAsync(SignUpDto signUpDto)
+    public async Task RegisterAsync(SignUpDto signUpDto)
     {
         if (signUpDto.Password != signUpDto.PasswordConfirm) throw new Exception("Passwords do not match");
         AppUser user = new() { Name = signUpDto.Name, Email = signUpDto.Email, Surname = signUpDto.Surname, UserName = signUpDto.Email };
@@ -35,7 +35,19 @@ public class AuthenticationService : IAuthenticationService
         }
         await _userManager.AddToRoleAsync(user, "member");
         string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        return token;
+
+        //todo: front link
+        string link = $"http://localhost:5000/auth/verify-email?token={token}&email={user.Email}";
+
+        string body = "";
+        using (StreamReader stream = new("wwwroot/templates/verifyEmail.html"))
+        {
+            body = stream.ReadToEnd();
+        };
+        body = body.Replace("{{link}}", link);
+        body = body.Replace("{{username}}", $"{user.Name} {user.Surname}");
+
+        _emailService.SendEmail(user.Email, "Verify Email", body);
     }
 
     public async Task<string> LoginAsync(LoginDto loginDto)

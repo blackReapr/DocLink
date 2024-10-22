@@ -14,5 +14,5 @@ public class AppUser : IdentityUser
     public List<Message> ReceivedMessages { get; set; }
     public List<Appointment> AppointmentAsPatient { get; set; }
     public List<Appointment> AppointmentAsDoctor { get; set; }
-    public decimal Price { get; set; }
+    public decimal? Price { get; set; }
 }

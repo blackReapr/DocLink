@@ -34,18 +34,21 @@ public class AppointmentService : IAppointmentService
         AppUser? patient = await _context.Users.SingleOrDefaultAsync(u => u.Id == patientId);
         if (patient is null || !await _userManager.IsInRoleAsync(patient, "member")) throw new Exception("Invalid patient Id");
 
+        DateTime EndTime = createAppointmentDto.StartTime + TimeSpan.FromMinutes(30);
+
         AppUser? doctor = await _context.Users.SingleOrDefaultAsync(u => u.Id == createAppointmentDto.DoctorId);
         if (doctor is null || !await _userManager.IsInRoleAsync(doctor, "doctor")) throw new Exception("Invalid doctor Id");
 
-        if (createAppointmentDto.StartTime < DateTime.UtcNow || createAppointmentDto.EndTime <= DateTime.UtcNow) throw new Exception("Invalid date");
+        if (createAppointmentDto.StartTime < DateTime.UtcNow || EndTime <= DateTime.UtcNow) throw new Exception("Invalid date");
 
-        if (createAppointmentDto.EndTime - createAppointmentDto.StartTime != TimeSpan.FromMinutes(30)) throw new Exception("Invalid interval");
+        if (EndTime - createAppointmentDto.StartTime != TimeSpan.FromMinutes(30)) throw new Exception("Invalid interval");
 
-        if (await _context.Appointments.AnyAsync(a => a.StartTime < createAppointmentDto.EndTime && a.EndTime > createAppointmentDto.StartTime)) throw new Exception("Busy schedule");
+        if (await _context.Appointments.AnyAsync(a => a.StartTime < EndTime && a.EndTime > createAppointmentDto.StartTime)) throw new Exception("Busy schedule");
 
         Appointment appointment = _mapper.Map<Appointment>(createAppointmentDto);
         appointment.Status = Status.PENDING;
-        appointment.Price = doctor.Price;
+        appointment.Price = doctor.Price.Value;
+        appointment.EndTime = EndTime;
 
         await _context.SaveChangesAsync();
     }

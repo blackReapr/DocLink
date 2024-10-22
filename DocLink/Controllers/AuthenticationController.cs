@@ -18,8 +18,8 @@ namespace DocLink.Presentation.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] SignUpDto signUpDto)
         {
-            string emailVerificationToken = await _authenticationService.RegisterAsync(signUpDto);
-            return Ok(new { emailVerificationToken });
+            await _authenticationService.RegisterAsync(signUpDto);
+            return Ok();
         }
 
         [HttpPost("login")]

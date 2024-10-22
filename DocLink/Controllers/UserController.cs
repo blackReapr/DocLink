@@ -1,6 +1,6 @@
 ﻿using DocLink.Application.Dtos.UserDtos;
 using DocLink.Application.Interfaces;
-using DocLink.Core.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DocLink.Presentation.Controllers
@@ -28,6 +28,21 @@ namespace DocLink.Presentation.Controllers
         {
             IEnumerable<UserReturnDto> doctors = await _userService.GetAllPatientAsync();
             return Ok(doctors);
+        }
+
+        [HttpGet("doctor/{id}")]
+        public async Task<IActionResult> GetDoctor(string id)
+        {
+            DoctorReturnDto dto = await _userService.GetDoctorAsync(id);
+            return Ok();
+        }
+
+        [HttpPost("doctor")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> CreateDoctor(DoctorCreateDto doctorCreateDto)
+        {
+            await _userService.CreateDoctorAsync(doctorCreateDto);
+            return Ok();
         }
     }
 }

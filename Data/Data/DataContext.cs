@@ -1,5 +1,4 @@
 ﻿using DocLink.Core.Entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
@@ -17,11 +16,6 @@ public class DataContext : IdentityDbContext<AppUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-        builder.Entity<IdentityRole>().HasData(
-            new IdentityRole() { Name = "member" },
-            new IdentityRole() { Name = "doctor" },
-            new IdentityRole() { Name = "admin" }
-            );
         base.OnModelCreating(builder);
     }
 }
