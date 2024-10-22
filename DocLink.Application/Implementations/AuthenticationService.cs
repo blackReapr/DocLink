@@ -1,4 +1,5 @@
 ﻿using DocLink.Application.Dtos.AuthenticationDtos;
+using DocLink.Application.Exceptions;
 using DocLink.Application.Extensions;
 using DocLink.Application.Interfaces;
 using DocLink.Core.Entities;
@@ -22,14 +23,14 @@ public class AuthenticationService : IAuthenticationService
 
     public async Task RegisterAsync(SignUpDto signUpDto)
     {
-        if (signUpDto.Password != signUpDto.PasswordConfirm) throw new Exception("Passwords do not match");
+        if (signUpDto.Password != signUpDto.PasswordConfirm) throw new CustomException(400, "Passwords do not match");
         AppUser user = new() { Name = signUpDto.Name, Email = signUpDto.Email, Surname = signUpDto.Surname, UserName = signUpDto.Email };
         IdentityResult result = await _userManager.CreateAsync(user, signUpDto.Password);
-        if (!result.Succeeded) throw new Exception(result.Errors.First().Code.ToString());
+        if (!result.Succeeded) throw new CustomException(400, result.Errors.First().Code.ToString());
         if (signUpDto.Profile != null)
         {
-            if (!signUpDto.Profile.IsImage()) throw new Exception("Invalid file format");
-            if (signUpDto.Profile.DoesSizeExceed(100)) throw new Exception("File size exceeds the limit");
+            if (!signUpDto.Profile.IsImage()) throw new CustomException(400, "Invalid file format");
+            if (signUpDto.Profile.DoesSizeExceed(100)) throw new CustomException(400, "File size exceeds the limit");
             string filename = await signUpDto.Profile.SaveFileAsync();
             user.Profile = filename;
         }
@@ -53,12 +54,12 @@ public class AuthenticationService : IAuthenticationService
     public async Task<string> LoginAsync(LoginDto loginDto)
     {
         AppUser? user = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-        if (user == null) throw new Exception("User not found");
+        if (user == null) throw new CustomException(400, "User not found");
 
         bool doesPasswordMatch = await _userManager.CheckPasswordAsync(user, loginDto.Password);
-        if (!doesPasswordMatch) throw new Exception("Incorrect credentials");
+        if (!doesPasswordMatch) throw new CustomException(400, "Incorrect credentials");
 
-        if (!user.EmailConfirmed) throw new Exception("Confirm your email");
+        if (!user.EmailConfirmed) throw new CustomException(400, "Confirm your email");
 
         string token = _tokenService.GenerateJWTToken(user);
         return token;
@@ -67,7 +68,7 @@ public class AuthenticationService : IAuthenticationService
     public async Task ConfirmEmailAsync(ConfirmEmailDto confirmEmailDto)
     {
         AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == confirmEmailDto.Email);
-        if (appUser == null) throw new Exception($"Unable to load user {confirmEmailDto.Email}");
+        if (appUser == null) throw new CustomException(400, $"Unable to load user {confirmEmailDto.Email}");
         await _userManager.ConfirmEmailAsync(appUser, confirmEmailDto.Token);
         await _userManager.UpdateSecurityStampAsync(appUser);
     }
@@ -75,7 +76,7 @@ public class AuthenticationService : IAuthenticationService
     public async Task<string> ForgotPasswordAsync(string email)
     {
         AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (appUser == null) throw new Exception();
+        if (appUser == null) throw new CustomException(404, "User does not exist");
         string token = await _userManager.GeneratePasswordResetTokenAsync(appUser);
         return token;
     }
@@ -83,9 +84,9 @@ public class AuthenticationService : IAuthenticationService
     public async Task ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
     {
         AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == resetPasswordDto.Email);
-        if (appUser == null) throw new Exception();
+        if (appUser == null) throw new CustomException(404, "User does not exist");
         var result = await _userManager.ResetPasswordAsync(appUser, resetPasswordDto.Token, resetPasswordDto.Password);
-        if (!result.Succeeded) throw new Exception();
+        if (!result.Succeeded) throw new CustomException(404, "Expired Token");
         await _userManager.UpdateSecurityStampAsync(appUser);
     }
 }

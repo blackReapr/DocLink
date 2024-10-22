@@ -17,6 +17,7 @@ using DocLink.Application.Dtos.AuthenticationDtos;
 using DocLink.Presentation.Converters;
 using Microsoft.OpenApi.Any;
 using DocLink.Data.SeedData;
+using DocLink.Presentation.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -124,9 +125,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseAuthorization();
 
 app.MapControllers();
+app.UseCors(routes => routes.AllowAnyOrigin());
 
 app.Run();

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using DocLink.Application.Dtos.AppointmentDtos;
+using DocLink.Application.Exceptions;
 using DocLink.Application.Interfaces;
 using DocLink.Core.Entities;
 using DocLink.Data.Data;
@@ -24,7 +25,7 @@ public class AppointmentService : IAppointmentService
     public async Task ChangeStatusAsync(string appointmentId, Status status)
     {
         Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
-        if (appointment == null) throw new Exception("Appointment does not exist");
+        if (appointment == null) throw new CustomException(404, "Appointment does not exist");
         appointment.Status = status;
         await _context.SaveChangesAsync();
     }
@@ -32,18 +33,16 @@ public class AppointmentService : IAppointmentService
     public async Task CreateAsync(AppointmentCreateDto createAppointmentDto, string patientId)
     {
         AppUser? patient = await _context.Users.SingleOrDefaultAsync(u => u.Id == patientId);
-        if (patient is null || !await _userManager.IsInRoleAsync(patient, "member")) throw new Exception("Invalid patient Id");
+        if (patient is null || !await _userManager.IsInRoleAsync(patient, "member")) throw new CustomException(404, "Patient does not exist");
 
         DateTime EndTime = createAppointmentDto.StartTime + TimeSpan.FromMinutes(30);
 
         AppUser? doctor = await _context.Users.SingleOrDefaultAsync(u => u.Id == createAppointmentDto.DoctorId);
-        if (doctor is null || !await _userManager.IsInRoleAsync(doctor, "doctor")) throw new Exception("Invalid doctor Id");
+        if (doctor is null || !await _userManager.IsInRoleAsync(doctor, "doctor")) throw new CustomException(404, "Doctor does not exist");
 
-        if (createAppointmentDto.StartTime < DateTime.UtcNow || EndTime <= DateTime.UtcNow) throw new Exception("Invalid date");
+        if (createAppointmentDto.StartTime < DateTime.UtcNow || EndTime <= DateTime.UtcNow) throw new CustomException(400, "Invalid date");
 
-        if (EndTime - createAppointmentDto.StartTime != TimeSpan.FromMinutes(30)) throw new Exception("Invalid interval");
-
-        if (await _context.Appointments.AnyAsync(a => a.StartTime < EndTime && a.EndTime > createAppointmentDto.StartTime)) throw new Exception("Busy schedule");
+        if (await _context.Appointments.AnyAsync(a => a.StartTime < EndTime && a.EndTime > createAppointmentDto.StartTime)) throw new CustomException(400, "Busy schedule");
 
         Appointment appointment = _mapper.Map<Appointment>(createAppointmentDto);
         appointment.Status = Status.PENDING;
@@ -56,7 +55,7 @@ public class AppointmentService : IAppointmentService
     public async Task DeleteAsync(string id)
     {
         Appointment? appointment = await _context.Appointments.FindAsync(id);
-        if (appointment == null) throw new Exception("Appointment not found");
+        if (appointment == null) throw new CustomException(404, "Appointment not found");
         _context.Appointments.Remove(appointment);
         await _context.SaveChangesAsync();
     }
@@ -64,16 +63,8 @@ public class AppointmentService : IAppointmentService
     public async Task<AppointmentReturnDto> DetailsAsync(string appointmentId)
     {
         Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
-        if (appointment == null) throw new Exception("Appointment does not exist");
+        if (appointment == null) throw new CustomException(404, "Appointment does not exist");
         AppointmentReturnDto returnDto = _mapper.Map<AppointmentReturnDto>(appointment);
         return returnDto;
     }
-
-    //public async Task<AppointmentReturnDto> DetailsAsync(string appointmentId)
-    //{
-    //    Appointment? appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id.ToString() == appointmentId);
-    //    if (appointment == null) throw new Exception("Appointment does not exist");
-    //    AppointmentReturnDto returnDto = _mapper.Map<AppointmentReturnDto>(appointment);
-    //    return returnDto;
-    //}
 }
